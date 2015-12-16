@@ -1,0 +1,321 @@
+<html><!-- #BeginTemplate "/Templates/Freebsd2001Template.dwt" --><!-- DW6 -->
+<head>
+  <META http-equiv="Content-Type" content="text/html; charset=big5">
+<!-- #BeginEditable "doctitle" -->
+<title>雄的 FreeBSD 筆記‧FTP 的架設─pure-ftpd</title>
+<!-- #EndEditable -->
+<style>
+   <!--
+    A:hover{color: red;}
+   -->
+  </style>
+</head>
+<body bgcolor=white link=blue vlink=blue>
+<center>
+  <table border=0 width=100%>
+    <tr> 
+	<td> 
+	  <table border=1 bordercolordark=white width=100% cellspacing=0 cellpadding=0>
+          <tr> 
+            <td> 
+              <table border=0 width=100% cellspacing=0 cellpadding=0>
+                <tr> 
+                  <td valign="middle" align="center" width=171> <img src="images/powerlogo.gif" width="171" height="64" alt="[Power by FreeBSD]"><br>
+                    <font size="2">顏國雄 <!-- #BeginEditable "%A4%E9%B4%C1" -->2004/06/29<!-- #EndEditable --></font> 
+                  </td>
+                  <td valign="middle" align="center" bgcolor="lightgrey"> <b><font size="5"><!-- #BeginEditable "%BC%D0%C3D" -->FTP 
+                    的架設─pure-ftpd <!-- #EndEditable --></font></b> </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+		</td>
+    </tr>
+	<tr>
+	   
+      <td align="right"> <font color="#CCCCCC" size=2><!-- #BeginEditable "Modified" -->2004/07/04<!-- #EndEditable -->&nbsp;修改&nbsp;</font> 
+      </td>
+	</tr>
+    <tr> 
+      <td valign="top"><!-- #BeginEditable "%A4%BA%AEe" --> 
+        <p>PureFTPd 源自於 Troll-FTPd，是一個很注重安全而且速度快，擁有多樣功能的 FTPd，安裝簡單，設定也容易，是除了使用 
+          FreeBSD 預設的 ftpd 的另外一個不錯的選擇。</p>
+        <h1> 1 安裝軟體</h1>
+        <h2>1-1 以 packages 安裝</h2>
+        <p>如果不想自訂 pure-ftpd 的特殊選項，我們可以選擇用 packages 的方式來安裝，安裝時需要 pure-ftpd 和 rc_subr 
+          兩個 packages ，直接透過網路安裝，後者如果尚未安裝會自動裝好，我們可以執行下列指令：</p>
+        <blockquote> 
+          <p>pkg_add -v ftp://ftp.tku.edu.tw/OS/FreeBSD/packages/packages-stable/Latest/pure-ftpd.tgz 
+          </p>
+        </blockquote>
+        <p> 執行完畢可以利用 pkg_info | grep pure-ftpd 確認一下。</p>
+        <h2> 1-2 以 ports 安裝</h2>
+        <p>如果需要使用到以 LDAP , MySQL 或 PostgreSQL 資料庫來儲存 pureftpd 的虛擬帳號，我們只好自己以 ports 
+          的方式把功能加入後再編譯。</p>
+        <p>在編譯 pure-ftpd 的 ports 時，/usr/ports 中至少要有以下的東西：</p>
+        <p>/usr/ports/<br>
+          　　　├Mk<br>
+          　　　├Templates<br>
+          　　　├Tools<br>
+          　　　├rc_subr<br>
+          　　　└ftp/pure-ftpd </p>
+        <p> rc_subr 的部份如果已經安裝好則可以省略，也可以自行先用 packages 的方式先安裝好 </p>
+        <h3>1-2-1 取得 pure-ftpd 編譯設定檔</h3>
+        <p>我們可以利用 ncftpget 來抓 pure-ftpd 的相關檔案，例如：</p>
+        <blockquote> 
+          <p> cd /usr/ports/ftp<br>
+            ncftpget -R ftp://freebsd.csie.nctu.edu.tw/pub/ports/ports/ftp/pure-ftpd</p>
+        </blockquote>
+        <p>其它所需的 Mk , Templates , Tools 目錄的東西記要順便抓取或更新。</p>
+        <h3><br>
+          1-2-2 進行編譯</h3>
+        <p>基本檔案準備好，我們就可以開始進行編譯了，下面提供兩種方式：</p>
+        <p>方法一：</p>
+        <blockquote> 
+          <p>cd /usr/ports/ftp/pure-ftpd<br>
+            make</p>
+        </blockquote>
+        <p>方法二：加入訊息中文化的參數</p>
+        <blockquote> 
+          <p>cd /usr/ports/ftp/pure-ftpd<br>
+            make <strong>WITH_LANG=traditional-chinese</strong></p>
+        </blockquote>
+        <p> 一般我們架設的 FTP server 在使用者登入時出現的訊息都是英文的， pure-ftpd 提供支援各種語言的系統訊息，其中也包括繁體中文， 
+          如果想要讓使用者在 FTP 軟體中能夠看到主機回應中文的訊息，就以方法二的方式，在編譯時多加一個 WITH_LANG=traditional-chinese 
+          的參數，這樣，甚至連 pure-ftpd 的系統運作記錄檔中也是用中文哦，至於好壞就自己試試囉！</p>
+        <p>如果是第一次執行前述的指令來編譯 pure-ftpd ，應該會出現下面的畫面，提供其它編譯選項讓我們選擇：</p>
+        <table width="500" border="1" align="center" cellpadding="5" cellspacing="0">
+          <tr> 
+            <td align="center">Options for pure-ftpd 1.0.19 <table width="400" border="1" align="center" cellpadding="5" cellspacing="0">
+                <tr> 
+                  <td><p>[ ] LDAP Support for users in LDAP directories <br>
+                      [ ] MYSQL Support for users in MySQL database <br>
+                      [ ] PGSQL Support for users in PostgreSQL database<br>
+                      [ ] PRIVSEP Enable privilege separation <br>
+                      [ ] PERUSERLIMITS Per-user concurrency limits</p>
+                    <p>&nbsp;</p></td>
+                </tr>
+              </table>
+              Ok　　　Cancel</td>
+          </tr>
+        </table>
+        <p>前三個選項主要是決定是否要讓 pure-ftpd 配合使用資料庫來建立虛擬帳號，一般是直接使用 FreeBSD 內建的系統帳號密碼來登入，或是使用 
+          pureftpd.pdb 的資料庫，如果不打算使用其它資料功能，可以按 Tab 鍵，讓游標移到 OK 鈕以後再按 Enter 鍵或空白鍵。</p>
+        <p> 註1：如果重新編譯時，希望再看到這個設定的選單，執行<strong> make config</strong> 即可再度出現。<br>
+          <br>
+          如果順利的完成編譯的動作，沒有任何錯誤訊息，就可以準備安裝。</p>
+        <h3>1-2-3 進行安裝</h3>
+        <blockquote> 
+          <p><strong>make install</strong></p>
+        </blockquote>
+        <p>安裝完畢，在 /usr/local/etc 中應該會多了幾個 pure*.conf.sample 的設定檔。</p>
+        <h1>2 修改設定檔</h1>
+        <h2>2-1 編輯 pure-ftpd.conf</h2>
+        <p>pure-ftpd 啟動時，功能參數可以直接加在啟動指令中，另外一種方式則是將要啟動的功能寫在設定檔中，再由套件中的 pure-config.pl 
+          來轉換並啟動 pure-ftpd ，FreeBSD ports 中預設的方式是第二種，我們直接以 pure-ftpd 套件中附的設定範本來修改即可，先將設定範本複製成 
+          pure-ftpd.conf ，並加入 write 的權限：</p>
+        <blockquote> 
+          <p><strong>cd /usr/local/etc<br>
+            cp pure-ftpd.conf.sample pure-ftpd.conf<br>
+            chmod u+w pure-ftpd.conf</strong></p>
+        </blockquote>
+        <p>接著用編輯器開啟檔案修改參數：</p>
+        <blockquote> 
+          <p> ee /usr/local/etc/pure-ftpd.conf</p>
+        </blockquote>
+        <p>pure-ftpd 可設定的功能選項非常多，下面介紹幾個常用的參數：</p>
+        <blockquote> 
+          <p> # 所有人都 chroot 只有屬於管理群組 GID <br>
+            # (下面的設定假設開放自訂的 admin 群姐 GID=1000) 的人才不 chroot<br>
+            ChrootEveryone yesTrustedGID &nbsp;&nbsp;&nbsp; 1000</p>
+          <p># 最多的連線數<br>
+            MaxClientsNumber &nbsp;&nbsp;&nbsp; 50</p>
+          <p># 同一個 IP 能夠連線的最高數量<br>
+            MaxClientsPerIP &nbsp;&nbsp;&nbsp; 8</p>
+          <p># 匿名 FTP 上載/下載的比率<br>
+            # AnonymousRatio &nbsp;&nbsp;&nbsp; 1 10</p>
+          <p># 所有用戶 上載/下載的比率<br>
+            # UserRatio &nbsp;&nbsp;&nbsp; 1 10</p>
+          <p># anonymous 使用者的頻寬速限,單位 KB/s<br>
+            # AnonymousBandwidth &nbsp;&nbsp;&nbsp; 8</p>
+          <p># 所有使用者(包括 anonymous) 的頻寬速限, 單位 KB/s<br>
+            # UserBandwidth &nbsp;&nbsp;&nbsp; 8</p>
+          <p># 如果要使用 PureDB user database 來建立虛擬帳號就加入下面這行<br>
+            # 詳細的說明可以參考 README.Virtual-Users<br>
+            # PureDB &nbsp;&nbsp;&nbsp; /usr/local/etc/pureftpd.pdb<br>
+          </p>
+        </blockquote>
+        <h2>2-2 編輯 /etc/rc.conf</h2>
+        <p>如果 pure-ftpd 有使用到 rc_subr 來控制服務的起動，我們就必須在 /etc/rc.conf 中加入下面的參數：</p>
+        <blockquote> 
+          <p><strong>pureftpd_enable=&quot;YES&quot;</strong></p>
+        </blockquote>
+        <p>不然，即使執行了 <strong>/usr/local/etc/rc.d/pure-ftpd.sh start</strong> 也無法啟動 
+          pure-ftpd。</p>
+        <h1>3 提供匿名的FTP</h1>
+        <h2>3-1 建立帳號及目錄</h2>
+        <p>要讓 pure-ftpd 能夠提供匿名的 FTP 服務 (Anonymous FTP)，首先要先建立好要給 FTP 使用的群組、帳號及目錄，下面我們準備一個群組叫 
+          ftpuser ，一個帳號叫 ftp ，並使用 /home/ftp 來放給訪客下載的檔案，執行底下的指令：</p>
+        <blockquote> 
+          <p><strong>pw groupadd ftpuser -g 21<br>
+            pw useradd ftp -u 21 -g ftpuser -c &quot;Anoymous FTP user&quot; -d 
+            /home/ftp -s /sbin/nologin<br>
+            mkdir /home/ftp<br>
+            chown ftp:ftpuser /home/ftp</strong></p>
+        </blockquote>
+        <h2>3-2 修改設定檔</h2>
+        <p>在 pure-ftpd.conf 中和匿名的 FTP 服務有關的選項至少要設定：</p>
+        <ul>
+          <li>NoAnonymous &nbsp;&nbsp;&nbsp; <strong>no</strong></li>
+          <li>AnonymousCanCreateDirs &nbsp;&nbsp;&nbsp; <strong>no</strong></li>
+          <li>AnonymousCantUpload &nbsp;&nbsp;&nbsp; <strong>no</strong></li>
+        </ul>
+        <p>如果想管制訪客下載的頻寬則可以設定 AnonymousBandwidth 的大小，其它設定自己研究囉！</p>
+        <h1>4 連線記錄</h1>
+        <h2>4-1 產生記錄檔</h2>
+        <p>假設我們希望 pure-ftpd 的連線記錄都寫入 /var/log/pureftpd.log，就執行下面的指令來產生空白的檔案：</p>
+        <blockquote> 
+          <p>touch /var/log/pureftpd.log</p>
+        </blockquote>
+        <h2>4-2 修改 syslogd.conf</h2>
+        <p>系統記錄是由 syslod 來總管，pure-ftpd 的連線記錄該寫至何處也是由它來控制，所以我們要修改 /etc/syslogd.conf 
+          ，不然，沒修改之前，所有 pure-ftpd 的記錄都寫到 /var/log/messages 中了。</p>
+        <p>以編輯器開啟 syslogd.conf 來修改：</p>
+        <blockquote> <strong>ee /etc/syslogd.conf</strong></blockquote>
+        <p>在裡面找到這下面這行：</p>
+        <blockquote> 
+          <p><strong>cron.* &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /var/log/cron</strong></p>
+        </blockquote>
+        <p>然後在它的下面新增一行：</p>
+        <blockquote> 
+          <p><strong>ftp.* &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; /var/log/pureftpd.log</strong></p>
+        </blockquote>
+        <p><br>
+          通知 syslogd 重新讀取 /etc/syslogd.conf 中的設定</p>
+        <blockquote> 
+          <p><strong>kill -HUP `cat /var/run/syslogd`</strong></p>
+        </blockquote>
+        <p><br>
+          如果以後想要使用 web 的流量分析程式來分析 FTP 記錄，就在 pure-ftpd.conf 中加入下面這行：</p>
+        <blockquote> 
+          <p><strong>AltLog &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; clf:/var/log/pureftpd.log</strong></p>
+        </blockquote>
+        <p>&nbsp;</p>
+        <h1>5 虛擬帳號的使用</h1>
+        <p>有時候，可能為了辦活動臨時想開一些可以透過 FTP 上載資料的帳號，FreeBSD 內建的 ftpd 綁在系統中，開了帳號如果沒有特別設定，可能該帳號也能使用其它網路資源，稍嫌麻煩，pure-ftpd 
+          提供了虛擬帳號的功能，這部份的帳號只有 pure-ftpd 知道，和系統的其它服務基本上是沒有關係的。</p>
+        <p>pure-ftpd 的虛擬帳號可以選擇儲存常見的資料庫軟體中，如 MySQL , PostgresSQL 或是 LDAP，如果帳號不多，不想那麼麻煩，它也提供儲存在 
+          PureDB user database 中，下面簡單的試一下 PureDB 。</p>
+        <p>帳號管理工具：</p>
+        <blockquote> 
+          <p>/usr/local/bin/pure-pw</p>
+        </blockquote>
+        <p>帳號資料檔：</p>
+        <blockquote> 
+          <p>/usr/local/etc/pureftpd.passwd<br>
+            /usr/local/etc/pureftpd.pdb</p>
+        </blockquote>
+        <h2>5-1 建立虛擬帳號共用的系統帳號</h2>
+        <p>當我們要利用 pure-ftpd 附的工具 pure-pw 來建立虛擬帳號時，它會要我們指定一個系統帳號及群組，所以要先建一個系統帳號及群組，假設我們要使用 
+          ftpuser 的帳號及 ftpgroup 群組，就執行：</p>
+        <blockquote> 
+          <p><strong>pw groupadd ftpgroup<br>
+            pw useradd ftpuser -g ftpgroup -c &quot;FTP visual user&quot; -d /dev/null 
+            -s /sbin/nologin</strong></p>
+        </blockquote>
+        <p>注意：前述的系統帳號不要使用和 Anonymous FTP 一樣的帳號、群組。</p>
+        <h2>5-2 建立虛擬帳號</h2>
+        <p>pure-ftpd 虛擬帳號的管理是利用 pure-pw 這個工具，它用起來和 FreeBSD 的 pw 類似，只是可設定的選項更多了，有興趣可以 
+          man pure-pw ，下面我們先建立一個測試的帳號 hello：</p>
+        <blockquote> 
+          <p><strong>pure-pw useradd hello -u ftpuser -d /home/ftpuser/hello -m</strong> 
+          </p>
+        </blockquote>
+        <p>指令輸入完，按完 Enter 鍵，pure-pw 會要求輸入密碼並再確認一次，設定好，帳號即新增完畢了。</p>
+        <p>參數說明：</p>
+        <ul>
+          <li>useradd：表示要執行新增帳號的程序。後面接要新增的帳號 hello。</li>
+          <li>-u ftpuser：ftpuser 為前一個步驟所建立的，可以讓所有的虛擬帳號都使用這個。</li>
+          <li>-d /hme/ftpuser/hello：設定要給這個帳號存放檔案的目錄。</li>
+          <li>-m：帳號新增完後順便把資料轉入資料庫 (/usr/local/etc/pureftpd.pdb) 中。如果沒有加這個參數就要自己執行 
+            <strong>pure-pw mkdb</strong> 來轉檔。</li>
+        </ul>
+        <p>pure-ftpd 的虛擬帳號還有很多的選項可設定，例如，可以管制傳輸的速度、quota、可連線 IP ...... 等，看看 pureftpd.passwd 
+          中所使用的欄位： </p>
+        <blockquote> 
+          <p>&lt;account&gt;:&lt;password&gt;:&lt;uid&gt;:&lt;gid&gt;:&lt;gecos&gt;:&lt;home 
+            directory&gt;:&lt;upload bandwidth&gt;:&lt;download andwidth&gt;:&lt;upload 
+            ratio&gt;:&lt;download ratio&gt;:&lt;max number of connections&gt;:&lt;files 
+            quota&gt;:&lt;size quota&gt;:&lt;authorized local IPs&gt;:&lt;refused 
+            local IPs&gt;:&lt;authorized client IPs&gt;:&lt;refused client IPs&gt;:&lt;time 
+            restrictions&gt;</p>
+        </blockquote>
+        <p>是不是很壯觀！已經存在的虛擬帳號我們可以利用 pure-pw 來管理：</p>
+        <ul>
+          <li>pure-pw usermod：修改帳號設定。</li>
+          <li>pure-pw userdel：刪除帳號</li>
+          <li>pure-pw passwd：設定帳號的密碼。</li>
+          <li>pure-pw show：顯示帳號的資料。</li>
+          <li>pure-pw list：列出所有的帳號。</li>
+        </ul>
+        <h2>5-3 修改 pure-ftpd.conf </h2>
+        <p>為了使用 PureDB 中的虛擬帳號來登入，我們必須修改 pure-ftpd.conf 並讓 pure-ftpd 重新啟動。</p>
+        <p>開啟 pure-ftpd.conf 來修改：</p>
+        <blockquote> 
+          <p>ee /usr/local/etc/pure-ftpd.conf</p>
+        </blockquote>
+        <p>至少在裡面加入下面的設定：</p>
+        <blockquote> 
+          <p>PureDB &nbsp;&nbsp;&nbsp; /usr/local/etc/pureftpd.pdb<br>
+            CreateHomeDir &nbsp;&nbsp;&nbsp; yes</p>
+        </blockquote>
+        <p>第一項是告訴 pure-ftpd 使用者資料庫檔的路徑，第二項則可以讓 pure-ftpd 自動建立使用者的個人目錄 (HomeDir)。</p>
+        <h1>6 後記</h1>
+        <p>最近的版本 pure-ftpd 1.0.19 在 FreeBSD 4.x 上 pure-pw 不知有什麼問題，執行新增帳號的 pure-pw 
+          useradd 時會出現錯誤而 core dump，在 FreeBSD 5.x 上則沒有這個狀況。如果改用 pure-ftpd 1.0.18 
+          則正常。</p>
+        <p>pure-ftpd 還有虛擬 FTP 站及流量管制的功能也值得一試哦！</p>
+        <!-- #EndEditable --> <br> &nbsp;<br> 
+        <table border=0 width=100% cellspacing=0 cellpadding=1>
+          <tr> 
+            <td  bgcolor=gray> 
+              <table border=0 width=100% cellspacing=0 cellpadding=2>
+                <tr  bgcolor=white> 
+				  <td align=center width=20 bgcolor=#66CCFF><a href=http://www.lsps.tp.edu.tw/~gsyan/><font size=-1>雄<br>
+                    的<br>
+                    家</font></a></td>
+                  <td><font size=-1> &nbsp;基礎： <a href="index.html">書籤</a> 
+                    - <a href="intro.html">簡介</a> - <a href=install.html>安裝</a> 
+                    - <a href="slice.html">Slices</a> - <a href="unix-basic.html">Unix基礎</a> 
+                    - <a href=basic-cmd.html>基本指令</a> - <a href=newsetup.html>首次登入</a> 
+                    - <a href=sysdir.html>目錄架構</a><br>
+                    &nbsp;系統： <a href=kernel.html>核心編譯</a> - <a href="make-world.html">系統升級</a> 
+                    - <a href=packages.html>Packages</a> - <a href=ports.html>Ports</a> 
+                    - <a href="picobsd.html">PicoBSD</a> - <a href="quota.html">Quota</a><br>
+                    &nbsp;網路： <a href=srv_ctrl.html>服務管理</a> - <a href=apache.html>WWW</a> 
+                    - <a href=ftp.html>FTP</a> - <a href=mail.html>MAIL</a> 
+                    - <a href=dns.html>DNS</a> - <a href=webmin.html></a> 
+                    <a href=samba.html>Samba</a> - <a href="nfs.html">NFS</a> 
+                    - <a href="dhcpd.html">DHCP</a> - <a href=webmin.html>webmin</a> 
+                    - <a href=imp-2.2.4.html>IMP</a> - <a href=openwebmail.html>OpenWebmail</a><br>
+                    &nbsp;其它： <a href=backup.html>Backup</a> - <a href="ups.html">UPS</a> 
+                    - <a href=security.html>系統安全</a> - <a href="nat_ipfw.html">ipfw&amp;natd</a> 
+                    - <a href="s-ppp.html">撥接服務</a> - <a href="pppoe.html">計時制ADSL</a> 
+                    - <a href="new.html">雜記</a> - <a href=faq.html>FAQ</a> 
+                    </font> </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <center>
+          <font size=-1> <br>
+          北市文山區力行國小顏國雄 </font> 
+        </center>
+      </td>
+    </tr>
+  </table>
+</center>
+</body>
+<!-- #EndTemplate --></html>
